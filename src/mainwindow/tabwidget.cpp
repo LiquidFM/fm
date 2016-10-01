@@ -41,14 +41,14 @@ namespace {
 }
 
 
-TabWidget::TabWidget(LVFS::Settings::Scope *settings, LVFS::Interface::Holder &opposite, QWidget *parent) :
+TabWidget::TabWidget(LVFS::Settings::Scope *settings, QWidget *parent) :
     QWidget(parent),
     m_tabIndex("Index", 0),
     m_tabPath("Path", ""),
     m_tab("Tab"),
     m_tabs(&m_tab),
     m_currentTab("CurrentTab", 0),
-    m_opposite(opposite),
+    m_opposite(NULL),
     m_doNotRefreshTab(true),
     m_layout(this),
     m_tabWidget(this)
@@ -151,7 +151,7 @@ void TabWidget::close()
 
 const LVFS::Interface::Holder &TabWidget::opposite(const LVFS::Interface::Holder &view) const
 {
-    return m_opposite;
+    return m_opposite->m_views.find(m_opposite->m_tabWidget.currentWidget())->second;
 }
 
 void TabWidget::show(const LVFS::Interface::Holder &view, const LVFS::Interface::Holder &n)
@@ -195,7 +195,7 @@ void TabWidget::show(const LVFS::Interface::Holder &view, const LVFS::Interface:
             if (LIKELY(newView.isValid()))
             {
                 coreView = newView->as<Core::IView>();
-                coreView->setMainView(Interface::Holder::fromRawData(this));
+                coreView->setMainView(Interface::self());
 
                 for (Interface::Holder n = node; n.isValid(); n = n->as<Core::INode>()->parent())
                     n->as<Core::INode>()->incRef();
@@ -225,6 +225,7 @@ void TabWidget::show(const LVFS::Interface::Holder &view, const LVFS::Interface:
                     m_views.erase(view->as<Core::IView>()->widget());
                     m_tabWidget.insertTab(index, coreView->widget(), Core::Qt::Node::toUnicode(node->as<Core::INode>()->file()->as<IEntry>()->title()));
                     m_tabWidget.setCurrentIndex(index);
+                    m_tabWidget.currentWidget()->setFocus();
                 }
 
                 m_views[coreView->widget()] = newView;
@@ -243,7 +244,7 @@ void TabWidget::show(const Interface::Holder &node)
         if (LIKELY(newView.isValid()))
         {
             Core::IView *coreView = newView->as<Core::IView>();
-            coreView->setMainView(Interface::Holder::fromRawData(this));
+            coreView->setMainView(Interface::self());
 
             for (Interface::Holder n = node; n.isValid(); n = n->as<Core::INode>()->parent())
                 n->as<Core::INode>()->incRef();

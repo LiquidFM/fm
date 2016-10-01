@@ -46,8 +46,10 @@ MainWindow::MainWindow(LVFS::Settings::Scope *settings) :
     setAttribute(Qt::WA_DeleteOnClose, false);
     setCentralWidget(&m_centralWidget);
 
-    m_tabs[0].reset(new TabWidget(&m_tabsSettings[0], m_tabs[1]));
-    m_tabs[1].reset(new TabWidget(&m_tabsSettings[1], m_tabs[0]));
+    m_tabs[0].reset(new TabWidget(&m_tabsSettings[0]));
+    m_tabs[1].reset(new TabWidget(&m_tabsSettings[1]));
+    m_tabs[0].as<TabWidget>()->setOpposite(m_tabs[1].as<TabWidget>());
+    m_tabs[1].as<TabWidget>()->setOpposite(m_tabs[0].as<TabWidget>());
 
     m_centralWidget.addWidget(m_tabs[0].as<TabWidget>());
     m_centralWidget.addWidget(m_tabs[1].as<TabWidget>());

@@ -38,10 +38,12 @@ class TabWidget : public QWidget, public LVFS::Implements<LVFS::Core::IMainView>
     Q_OBJECT
 
 public:
-    TabWidget(LVFS::Settings::Scope *settings, LVFS::Interface::Holder &opposite, QWidget *parent = 0);
+    TabWidget(LVFS::Settings::Scope *settings, QWidget *parent = 0);
 
     void open();
     void close();
+
+    void setOpposite(TabWidget *opposite) { m_opposite = opposite; }
 
     bool hasFocus() const { return m_tabWidget.currentWidget()->hasFocus(); }
     void setFocus() { m_tabWidget.currentWidget()->setFocus(); }
@@ -162,7 +164,7 @@ private:
 private:
 //    Settings m_settings;
     Container m_views;
-    LVFS::Interface::Holder &m_opposite;
+    TabWidget *m_opposite;
     bool m_doNotRefreshTab;
     QVBoxLayout m_layout;
     QTabWidget m_tabWidget;

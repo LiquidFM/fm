@@ -21,7 +21,9 @@
 #define APPLICATION_H_
 
 #include <lvfs/Module>
+#include <lvfs/settings/Scope>
 #include <QtGui/QApplication>
+#include "mainwindow/mainwindow.h"
 
 
 class Application : public QApplication
@@ -29,7 +31,7 @@ class Application : public QApplication
 	Q_OBJECT
 
 public:
-	Application(const QString &name, const QString &organization, const QString &description, int &argc, char **argv, bool GUIenabled = true);
+	Application(const char *settings, int &argc, char **argv);
 	virtual ~Application();
 
 	virtual bool notify(QObject *receiver, QEvent *event);
@@ -41,8 +43,12 @@ private Q_SLOTS:
 	void cleanup();
 
 private:
-    LVFS::Module module;
-    LVFS::Interface::Holder m_mainWindow;
+    LVFS::Settings::Scope m_appSettings;
+    LVFS::Settings::Instance m_settings;
+    LVFS::Module m_module;
+
+private:
+    MainWindow m_mainWindow;
 };
 
 #endif /* APPLICATION_H_ */

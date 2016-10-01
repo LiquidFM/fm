@@ -1,18 +1,12 @@
-[submodule "workspace/platform"]
-	path = workspace/platform
-	url = git@github.com:vilkov/platform.git
-[submodule "workspace/xdg"]
-	path = workspace/xdg
-	url = git@github.com:vilkov/libxdg.git
-[submodule "workspace/liquiddb"]
-	path = workspace/liquiddb
-	url = git@github.com:vilkov/liquiddb.git
-[submodule "workspace/brolly"]
-	path = workspace/brolly
-	url = git@github.com:vilkov/brolly.git
-[submodule "workspace/efc"]
-	path = workspace/efc
-	url = git@github.com:vilkov/efc.git
-[submodule "workspace/lvfs"]
-	path = workspace/lvfs
-	url = git@github.com:vilkov/lvfs.git
+[submodule "platform"]
+	path = platform
+	url = git@github.com:LiquidFM/platform.git
+[submodule "efc"]
+	path = efc
+	url = git@github.com:LiquidFM/efc.git
+[submodule "brolly"]
+	path = brolly
+	url = git@github.com:LiquidFM/brolly.git
+[submodule "lvfs"]
+	path = lvfs
+	url = git@github.com:LiquidFM/lvfs.git

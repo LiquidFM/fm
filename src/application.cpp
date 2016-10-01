@@ -1,7 +1,7 @@
 /**
  * This file is part of QFM.
  *
- * Copyright (C) 2011-2014 Dmitriy Vilkov, <dav.daemon@gmail.com>
+ * Copyright (C) 2011-2015 Dmitriy Vilkov, <dav.daemon@gmail.com>
  *
  * QFM is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,9 +18,6 @@
  */
 
 #include "application.h"
-#include "mainwindow/mainwindow.h"
-
-#include <qfm/qfm_version.h>
 
 #include <lvfs-core/INode>
 
@@ -35,16 +32,22 @@
 
 
 
-Application::Application(const QString &name, const QString &organization, const QString &description, int &argc, char **argv, bool GUIenabled) :
-	QApplication(argc, argv, GUIenabled),
-    m_mainWindow(new MainWindow())
+Application::Application(const char *settings, int &argc, char **argv) :
+	QApplication(argc, argv, true),
+    m_appSettings("QFM"),
+	m_settings(settings),
+	m_module(m_settings),
+    m_mainWindow(&m_appSettings)
 {
-	QApplication::setApplicationName(name);
-	QApplication::setOrganizationName(organization);
+	QApplication::setApplicationName(QString::fromLatin1("qfm"));
+	QApplication::setOrganizationName(QString::fromLatin1("qde"));
 	QApplication::setApplicationVersion(version());
 	connect(this, SIGNAL(lastWindowClosed()), this, SLOT(cleanup()));
 
-    m_mainWindow.as<MainWindow>()->open();
+    m_settings.manage(&m_appSettings);
+    m_settings.load();
+
+    m_mainWindow.open();
 }
 
 Application::~Application()
@@ -54,10 +57,12 @@ Application::~Application()
 
 QString Application::version() const
 {
-	if (QFM_VERSION_RELEASE % 2 == 0)
-		return QString::fromLatin1(QFM_VERSION_STRING);
-	else
-		return QString::fromLatin1(QFM_VERSION_STRING).append(QString::fromLatin1(" (unstable)"));
+//	if (QFM_VERSION_RELEASE % 2 == 0)
+//		return QString::fromLatin1(QFM_VERSION_STRING);
+//	else
+//		return QString::fromLatin1(QFM_VERSION_STRING).append(QString::fromLatin1(" (unstable)"));
+
+    return QString();
 }
 
 bool Application::notify(QObject *receiver, QEvent *event)
@@ -65,7 +70,7 @@ bool Application::notify(QObject *receiver, QEvent *event)
     if (event->type() == QEvent::KeyPress &&
         (static_cast<QKeyEvent*>(event)->key() + static_cast<QKeyEvent*>(event)->modifiers()) == Qt::NoModifier + Qt::Key_Tab)
     {
-        m_mainWindow.as<MainWindow>()->switchToOtherPanel();
+        m_mainWindow.switchToOtherPanel();
         event->accept();
         return true;
     }
@@ -83,12 +88,13 @@ qint32 Application::exec()
 //    qtTranslator.load(QString::fromLatin1("app_").append(QLocale::system().name()), QApplication::applicationDirPath());
 //    installTranslator(&appTranslator);
 
-    m_mainWindow.as<MainWindow>()->show();
+    m_mainWindow.show();
     return QApplication::exec();
 }
 
 void Application::cleanup()
 {
-    m_mainWindow.as<MainWindow>()->close();
+    m_mainWindow.close();
     LVFS::Core::INode::cleanup();
+    m_settings.save();
 }
