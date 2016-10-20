@@ -23,6 +23,15 @@
 #include <lvfs/Interface>
 #include <lvfs/settings/Scope>
 #include <lvfs/settings/IntOption>
+
+#include <lvfs-core/tools/events/ContextMenuEventHandler>
+#include <lvfs-core/tools/events/ContextMenuEventSource>
+#include <lvfs-core/tools/events/KeyboardEventHandler>
+#include <lvfs-core/tools/events/KeyboardEventSource>
+#include <lvfs-core/tools/events/EventHandlerDefault>
+#include <lvfs-core/tools/events/MouseEventHandler>
+#include <lvfs-core/tools/events/MouseEventSource>
+
 #include <QtGui/QSplitter>
 #include <QtGui/QMainWindow>
 
@@ -43,13 +52,30 @@ public:
     void switchToOtherPanel();
 
 private:
+    void showMountsForLeft();
+    void showMountsForRight();
+    void showMounts(const LVFS::Interface::Holder &view);
+
+private:
     LVFS::Settings::Scope m_settings;
     LVFS::Settings::Scope m_geometry;
     LVFS::Settings::IntOption m_geometryVal[4];
     LVFS::Settings::Scope m_tabsSettings[2];
 
 private:
-    QSplitter m_centralWidget;
+      typedef LVFS::Tools::KeyboardEventSource<
+                  LVFS::Tools::EventSourceBase<
+                      QSplitter
+                  >
+              > CentralWidget;
+      typedef LVFS::Tools::KeyboardEventHandler<
+                  LVFS::Tools::EventHandlerBase<
+                      MainWindow
+                  >
+              > CentralWidgetEventHandler;
+
+    CentralWidgetEventHandler m_eventHandler;
+    CentralWidget m_centralWidget;
     LVFS::Interface::Holder m_tabs[2];
 };
 

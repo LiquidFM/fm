@@ -22,6 +22,7 @@
 
 #include <lvfs/Module>
 #include <lvfs/settings/Scope>
+#include <ldm/Devices>
 #include <QtGui/QApplication>
 #include "mainwindow/mainwindow.h"
 
@@ -46,6 +47,7 @@ private:
     LVFS::Settings::Scope m_appSettings;
     LVFS::Settings::Instance m_settings;
     LVFS::Module m_module;
+    Devices m_devices;
 
 private:
     MainWindow m_mainWindow;

@@ -39,6 +39,9 @@ include_directories (${LVFS_INCLUDE})
 find_package (Lvfs-Core REQUIRED)
 include_directories (${LVFS_CORE_INCLUDE})
 
+find_package (LDM REQUIRED)
+include_directories (${LDM_INCLUDE})
+
 
 # Project header
 project_executable_header_default ()
@@ -48,6 +51,7 @@ list (APPEND ${PROJECT_NAME}_LIBS ${EFC_LIB})
 list (APPEND ${PROJECT_NAME}_LIBS ${LVFS_LIB})
 list (APPEND ${PROJECT_NAME}_LIBS ${QT_LIBRARIES})
 list (APPEND ${PROJECT_NAME}_LIBS ${LVFS_CORE_LIB})
+list (APPEND ${PROJECT_NAME}_LIBS ${LDM_LIB})
 
 # Sources
 add_subdirectory (src)

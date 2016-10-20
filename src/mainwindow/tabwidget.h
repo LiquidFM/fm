@@ -47,6 +47,9 @@ public:
 
     bool hasFocus() const { return m_tabWidget.currentWidget()->hasFocus(); }
     void setFocus() { m_tabWidget.currentWidget()->setFocus(); }
+    void showStorageDevices();
+
+    void error(const QString &message);
 
 public: /* LVFS::Core::IMainView */
     virtual const LVFS::Interface::Holder &opposite(const LVFS::Interface::Holder &view) const;

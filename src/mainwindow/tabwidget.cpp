@@ -26,11 +26,26 @@
 #include <lvfs-core/IViewFactory>
 #include <lvfs-core/models/Qt/Node>
 
-#include <brolly/assert.h>
+#include <ldm/Visitor>
+#include <ldm/Device>
+#include <ldm/Devices>
+#include <ldm/Drive>
+#include <ldm/FlashDrive>
+#include <ldm/FloppyDrive>
+#include <ldm/HardDrive>
+#include <ldm/OpticalDrive>
+#include <ldm/Partition>
+#include <ldm/RemovableDrive>
+#include <lvfs-core/tools/strings/readableints.h>
+
 #include <efc/ScopedPointer>
+
+#include <QtGui/QMenu>
+#include <QtGui/QMessageBox>
 
 
 namespace {
+    using namespace LDM;
     using namespace LVFS;
 
     bool compare_tabs(Settings::Option *o1, Settings::Option *o2)
@@ -38,6 +53,96 @@ namespace {
         return static_cast<Settings::IntOption *>(*static_cast<Settings::Scope *>(o1)->options().begin())->value() <
                 static_cast<Settings::IntOption *>(*static_cast<Settings::Scope *>(o2)->options().begin())->value();
     }
+
+    class MenuBuilder : public Visitor
+    {
+    public:
+        MenuBuilder(QMenu &menu) :
+            menu(menu),
+            tab(QString::fromLatin1("    %1 (%2)")),
+            label(QString::fromLatin1("%1 (%2)"))
+        {}
+
+        virtual void visit(Drive &item)
+        {
+            const Drive::Container &partitions = item.partitions();
+            QString title = QString(label).arg(item.label()).arg(humanReadableShortSize(item.size()));
+
+            menu.addAction(item.icon(), title)->setData(qVariantFromValue(static_cast<void *>(&item)));
+
+            for (auto i : partitions)
+            {
+                title = QString(tab).arg(i->label()).arg(humanReadableShortSize(i->size()));
+                menu.addAction(i->icon(), title)->setData(qVariantFromValue(static_cast<void *>(i)));
+            }
+        }
+
+        virtual void visit(HardDrive &item) { visit(static_cast<Drive &>(item)); }
+        virtual void visit(FlashDrive &item) { visit(static_cast<Drive &>(item)); }
+        virtual void visit(RemovableDrive &item) { visit(static_cast<Drive &>(item)); }
+        virtual void visit(OpticalDrive &item) { visit(static_cast<Drive &>(item)); }
+        virtual void visit(FloppyDrive &item) { visit(static_cast<Drive &>(item)); }
+        virtual void visit(Partition &item) { Q_ASSERT(!"Should not be reached!"); }
+
+    private:
+        QMenu &menu;
+        QString tab;
+        QString label;
+    };
+
+    class MenuActionProcessor : public Visitor
+    {
+    public:
+        typedef void (TabWidget::*Show)(const LVFS::Interface::Holder &view, const LVFS::Interface::Holder &node);
+        typedef void (TabWidget::*Error)(const QString &message);
+
+    public:
+        MenuActionProcessor(TabWidget *tab, Show show, Error error, const Interface::Holder &view) :
+            tab(tab),
+            show(show),
+            error(error),
+            view(view)
+        {}
+
+        virtual void visit(Drive &item) {}
+        virtual void visit(HardDrive &item) {}
+        virtual void visit(FlashDrive &item) { visit(static_cast<RemovableDrive &>(item)); }
+        virtual void visit(RemovableDrive &item)
+        {
+            QString err;
+
+            if (item.isDetachable())
+                if (!item.eject(err))
+                    (tab->*error)(err);
+        }
+        virtual void visit(OpticalDrive &item) { visit(static_cast<RemovableDrive &>(item)); }
+        virtual void visit(FloppyDrive &item) { visit(static_cast<RemovableDrive &>(item)); }
+        virtual void visit(Partition &item)
+        {
+            QString err;
+
+            if (item.mountPaths().isEmpty())
+                if (!item.mount(err))
+                {
+                    (tab->*error)(err);
+                    return;
+                }
+
+            LVFS::Error e;
+            Interface::Holder node = Core::INode::open(Core::Qt::Node::fromUnicode(item.mountPaths().at(0)), e);
+
+            if (LIKELY(node.isValid() == true))
+                (tab->*show)(view, node);
+            else
+                (tab->*error)(Core::Qt::Node::toUnicode(e.description()));
+        }
+
+    private:
+        TabWidget *tab;
+        Show show;
+        Error error;
+        const Interface::Holder &view;
+    };
 }
 
 
@@ -116,7 +221,7 @@ void TabWidget::close()
     for (Container::iterator it = m_views.begin(); it != m_views.end(); it = m_views.erase(it))
     {
         node = it->second->as<Core::IView>()->node();
-        ASSERT(node.isValid());
+        Q_ASSERT(node.isValid());
 
         tab.reset(new Settings::Scope(m_tab.id(), true));
 
@@ -147,6 +252,26 @@ void TabWidget::close()
     }
 
     m_tabWidget.clear();
+}
+
+void TabWidget::showStorageDevices()
+{
+    using namespace LDM;
+
+    QMenu menu;
+    MenuBuilder builder(menu);
+    Devices::instance().accept(builder);
+
+    if (QAction *res = menu.exec(mapToGlobal(pos())))
+    {
+        MenuActionProcessor processor(this, &TabWidget::show, &TabWidget::error, m_views.find(m_tabWidget.currentWidget())->second);
+        static_cast<Device *>(res->data().value<void *>())->accept(processor);
+    }
+}
+
+void TabWidget::error(const QString &message)
+{
+    QMessageBox::critical(this, tr("Error"), message);
 }
 
 const LVFS::Interface::Holder &TabWidget::opposite(const LVFS::Interface::Holder &view) const
@@ -219,7 +344,7 @@ void TabWidget::show(const LVFS::Interface::Holder &view, const LVFS::Interface:
                     m_tabWidget.addTab(coreView->widget(), Core::Qt::Node::toUnicode(node->as<Core::INode>()->file()->as<IEntry>()->title()));
                 else
                 {
-                    ASSERT(m_tabWidget.currentWidget() == view->as<Core::IView>()->widget());
+                    Q_ASSERT(m_tabWidget.currentWidget() == view->as<Core::IView>()->widget());
 
                     m_tabWidget.removeTab(index);
                     m_views.erase(view->as<Core::IView>()->widget());
@@ -271,7 +396,7 @@ void TabWidget::show(const Interface::Holder &node)
 void TabWidget::close(const Interface::Holder &view)
 {
     using namespace LVFS;
-    ASSERT(m_tabWidget.indexOf(view->as<Core::IView>()->widget()) != -1);
+    Q_ASSERT(m_tabWidget.indexOf(view->as<Core::IView>()->widget()) != -1);
 
     if (m_tabWidget.count() > 1)
     {

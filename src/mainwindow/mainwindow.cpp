@@ -20,10 +20,10 @@
 #include "mainwindow.h"
 #include "tabwidget.h"
 
+#include <QtCore/QByteArray>
 #include <QtGui/QDesktopWidget>
 #include <QtGui/QApplication>
 #include <QtGui/QCloseEvent>
-#include <QtCore/QByteArray>
 
 #include <cstring>
 
@@ -41,7 +41,9 @@ MainWindow::MainWindow(LVFS::Settings::Scope *settings) :
     m_tabsSettings({
                        { "LeftPanel" },
                        { "RightPanel" }
-                   })
+                   }),
+   m_eventHandler(this),
+   m_centralWidget(&m_eventHandler, this)
 {
     setAttribute(Qt::WA_DeleteOnClose, false);
     setCentralWidget(&m_centralWidget);
@@ -63,6 +65,9 @@ MainWindow::MainWindow(LVFS::Settings::Scope *settings) :
     m_settings.manage(&m_tabsSettings[0]);
     m_settings.manage(&m_tabsSettings[1]);
     settings->manage(&m_settings);
+
+    m_eventHandler.registerShortcut(Qt::ALT, Qt::Key_F1, &MainWindow::showMountsForLeft);
+    m_eventHandler.registerShortcut(Qt::ALT, Qt::Key_F2, &MainWindow::showMountsForRight);
 }
 
 MainWindow::~MainWindow()
@@ -109,4 +114,14 @@ void MainWindow::switchToOtherPanel()
         m_tabs[1].as<TabWidget>()->setFocus();
     else
         m_tabs[0].as<TabWidget>()->setFocus();
+}
+
+void MainWindow::showMountsForLeft()
+{
+    m_tabs[0].as<TabWidget>()->showStorageDevices();
+}
+
+void MainWindow::showMountsForRight()
+{
+    m_tabs[1].as<TabWidget>()->showStorageDevices();
 }
